@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Generated files
+node_modules/
+.next/
