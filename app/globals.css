@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-navy-950: #070e18;
+    --brand-navy-900: #0c1a2d;
+    --brand-navy-800: #12243d;
+    --brand-teal-600: #0d9488;
+    --brand-teal-500: #14b8a6;
+    --brand-teal-400: #2dd4bf;
+    --brand-cyan-500: #06b6d4;
+    --brand-mint-500: #10b981;
+    --surface-light: #f8fafc;
+    --surface-card: #ffffff;
+    --border-subtle: #e2e8f0;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom Healthcare UI Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-panel-dark {
+  background: rgba(12, 26, 45, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(30, 41, 59, 0.7);
+}
+
+.card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(12, 26, 45, 0.08), 0 8px 10px -6px rgba(12, 26, 45, 0.04);
+}
+
+/* Custom scrollbars for patient timeline */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Pulse animation for active medication doses */
+@keyframes softPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-soft-pulse {
+  animation: softPulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
