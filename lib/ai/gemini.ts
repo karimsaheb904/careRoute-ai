@@ -212,6 +212,7 @@ Output Schema JSON:
 function generateFallbackPrescriptionAnalysis(
   input: z.infer<typeof PrescriptionAnalysisRequestSchema>
 ) {
+  void input;
   return {
     doctorName: "Dr. Anita Sharma, MD",
     issueDate: new Date().toISOString().split("T")[0],

@@ -9,7 +9,26 @@ import {
   ClinicCareTask,
   NotificationItem,
   LifestyleRoutine,
+  Clinic,
+  PatientConsent,
 } from "@/types";
+
+export const demoClinics: Clinic[] = [
+  {
+    id: "apollo-hyderabad-01",
+    name: "Apollo Health City",
+    branch: "Jubilee Hills",
+    city: "Hyderabad",
+    phone: "+91 40 2360 7777",
+  },
+  {
+    id: "care-vijayawada-02",
+    name: "Care Medical Center",
+    branch: "MG Road",
+    city: "Vijayawada",
+    phone: "+91 866 248 8888",
+  },
+];
 
 export const demoPatient: Profile = {
   id: "patient-venkata-rao",
@@ -23,6 +42,18 @@ export const demoPatient: Profile = {
   clinicId: "apollo-hyderabad-01",
 };
 
+export const demoPatientB: Profile = {
+  id: "patient-lakshmi-devi",
+  email: "lakshmi.devi@example.com",
+  fullName: "Lakshmi Devi",
+  role: "patient",
+  phone: "+91 99887 76655",
+  preferredLanguage: "te",
+  dateOfBirth: "1968-11-20",
+  gender: "Female",
+  clinicId: "care-vijayawada-02",
+};
+
 export const demoClinicStaff: Profile = {
   id: "staff-priya-sharma",
   email: "priya.nurse@careclinic.in",
@@ -31,6 +62,26 @@ export const demoClinicStaff: Profile = {
   phone: "+91 91234 56789",
   preferredLanguage: "en",
   clinicId: "apollo-hyderabad-01",
+};
+
+export const demoClinicAdmin: Profile = {
+  id: "admin-suresh-reddy",
+  email: "suresh.admin@apollohealth.in",
+  fullName: "Dr. Suresh Reddy (Clinic Admin)",
+  role: "admin",
+  phone: "+91 98480 12345",
+  preferredLanguage: "en",
+  clinicId: "apollo-hyderabad-01",
+};
+
+export const demoClinicBStaff: Profile = {
+  id: "staff-ramanathan",
+  email: "ramanathan@careclinic-b.in",
+  fullName: "Dr. K. Ramanathan, MD",
+  role: "clinic_staff",
+  phone: "+91 866 555 4321",
+  preferredLanguage: "te",
+  clinicId: "care-vijayawada-02",
 };
 
 export const demoClinician: Profile = {
@@ -42,6 +93,43 @@ export const demoClinician: Profile = {
   preferredLanguage: "en",
   clinicId: "apollo-hyderabad-01",
 };
+
+export const initialConsents: PatientConsent[] = [
+  {
+    id: "consent-01",
+    patientId: "patient-venkata-rao",
+    clinicId: "apollo-hyderabad-01",
+    clinicName: "Apollo Health City, Jubilee Hills",
+    canViewReports: true,
+    canViewPrescriptions: true,
+    canManageAppointments: true,
+    status: "active",
+    grantedAt: "2026-09-01T08:00:00Z",
+  },
+  {
+    id: "consent-02",
+    patientId: "patient-lakshmi-devi",
+    clinicId: "care-vijayawada-02",
+    clinicName: "Care Medical Center, Vijayawada",
+    canViewReports: true,
+    canViewPrescriptions: true,
+    canManageAppointments: true,
+    status: "active",
+    grantedAt: "2026-09-15T09:30:00Z",
+  },
+  {
+    id: "consent-03",
+    patientId: "patient-venkata-rao",
+    clinicId: "care-vijayawada-02",
+    clinicName: "Care Medical Center, Vijayawada",
+    canViewReports: false,
+    canViewPrescriptions: false,
+    canManageAppointments: false,
+    status: "revoked",
+    grantedAt: "2026-08-01T10:00:00Z",
+    revokedAt: "2026-10-01T14:20:00Z",
+  },
+];
 
 export const initialPrescriptions: Prescription[] = [
   {
@@ -127,9 +215,53 @@ export const initialPrescriptions: Prescription[] = [
     ],
     createdAt: "2026-10-22T14:20:00Z",
   },
+  {
+    id: "rx-patient-b-01",
+    patientId: "patient-lakshmi-devi",
+    patientName: "Lakshmi Devi",
+    doctorName: "Dr. K. Ramanathan, MD",
+    clinicName: "Care Medical Center, Vijayawada",
+    issueDate: "2026-10-18",
+    status: "verified",
+    handwritingClarity: "clear",
+    verifiedBy: "Dr. K. Ramanathan, MD",
+    verifiedAt: "2026-10-18 10:00 AM",
+    verificationNotes: "Verified Levothyroxine therapy for Hypothyroidism.",
+    extractedItems: [
+      {
+        id: "item-b-01",
+        medicineName: "Levothyroxine Sodium",
+        dosage: "50 mcg",
+        frequency: "Once daily in the morning",
+        timing: "empty_stomach",
+        durationDays: 90,
+        specificTimes: ["07:00"],
+        instructionsEn: "Take 1 tablet on an empty stomach 30 minutes before breakfast with plain water.",
+        instructionsTe: "ఉదయం పరగడుపున అల్పాహారానికి 30 నిమిషాల ముందు 1 టాబ్లెట్ నీటితో తీసుకోండి.",
+        clarityStatus: "clear",
+        isVerified: true,
+      },
+    ],
+    createdAt: "2026-10-18T09:15:00Z",
+  },
 ];
 
 export const initialMedicationSchedules: MedicationSchedule[] = [
+  {
+    id: "sched-b-01",
+    patientId: "patient-lakshmi-devi",
+    prescriptionId: "rx-patient-b-01",
+    medicineName: "Levothyroxine Sodium",
+    dosage: "50 mcg",
+    instructionsEn: "Take 1 tablet on empty stomach 30 mins before breakfast.",
+    instructionsTe: "ఉదయం పరగడుపున అల్పాహారానికి 30 నిమిషాల ముందు 1 టాబ్లెట్ తీసుకోండి.",
+    timing: "empty_stomach",
+    scheduledTimes: ["07:00"],
+    startDate: "2026-10-18",
+    endDate: "2027-01-18",
+    isVerifiedPrescription: true,
+    active: true,
+  },
   {
     id: "sched-01",
     patientId: "patient-venkata-rao",
@@ -428,6 +560,34 @@ export const initialMedicalReports: MedicalReport[] = [
     ],
     createdAt: "2026-01-10T09:30:00Z",
   },
+  {
+    id: "rep-patient-b-01",
+    patientId: "patient-lakshmi-devi",
+    patientName: "Lakshmi Devi",
+    reportName: "Thyroid Profile Total (T3, T4, TSH)",
+    reportDate: "2026-10-17",
+    reportType: "Comprehensive Metabolic Panel",
+    laboratory: "Care Diagnostics, Vijayawada",
+    status: "clinician_reviewed",
+    createdAt: "2026-10-17T11:00:00Z",
+    hasAbnormalValues: true,
+    measurements: [
+      {
+        id: "meas-b-01",
+        testName: "Thyroid Stimulating Hormone (TSH)",
+        category: "Endocrine",
+        value: "6.85",
+        numericValue: 6.85,
+        unit: "μIU/mL",
+        referenceRangeMin: 0.45,
+        referenceRangeMax: 4.5,
+        referenceRangeText: "0.45 - 4.50 μIU/mL",
+        flag: "high",
+        clinicalSignificanceEn: "Elevated TSH indicates mild subclinical hypothyroidism.",
+        clinicalSignificanceTe: "TSH ఎక్కువగా ఉండడం థైరాయిడ్ పనితీరు మందగించిందని సూచిస్తుంది.",
+      },
+    ],
+  },
 ];
 
 export const sampleReportExplanations: Record<string, { en: ReportExplanation; te: ReportExplanation }> = {
@@ -540,11 +700,30 @@ export const initialAppointments: Appointment[] = [
     notes: "Patient was unable to attend due to travel. Recovery task queued for clinic staff.",
     createdAt: "2026-10-05T14:30:00Z",
   },
+  {
+    id: "apt-patient-b-01",
+    patientId: "patient-lakshmi-devi",
+    patientName: "Lakshmi Devi",
+    patientPhone: "+91 99887 76655",
+    clinicianId: "staff-ramanathan",
+    clinicianName: "Dr. K. Ramanathan, MD",
+    specialty: "General Medicine",
+    appointmentType: "Follow-up Review",
+    date: "2026-10-28",
+    startTime: "11:00",
+    endTime: "11:30",
+    room: "Room 102 (OPD)",
+    status: "confirmed",
+    reasonForVisit: "Thyroid dosage adjustment and lab follow-up",
+    notes: "Patient requested Telugu communication.",
+    createdAt: "2026-10-19T09:00:00Z",
+  },
 ];
 
 export const initialCareTasks: ClinicCareTask[] = [
   {
     id: "task-01",
+    clinicId: "apollo-hyderabad-01",
     patientId: "patient-venkata-rao",
     patientName: "Venkata Rao",
     patientPhone: "+91 98765 43210",
@@ -578,6 +757,7 @@ export const initialCareTasks: ClinicCareTask[] = [
   },
   {
     id: "task-02",
+    clinicId: "apollo-hyderabad-01",
     patientId: "patient-venkata-rao",
     patientName: "Venkata Rao",
     patientPhone: "+91 98765 43210",
@@ -604,6 +784,7 @@ export const initialCareTasks: ClinicCareTask[] = [
   },
   {
     id: "task-03",
+    clinicId: "apollo-hyderabad-01",
     patientId: "patient-venkata-rao",
     patientName: "Venkata Rao",
     patientPhone: "+91 98765 43210",
@@ -625,6 +806,33 @@ export const initialCareTasks: ClinicCareTask[] = [
         actor: "Safety Guardrail Engine",
         action: "Prescription Flagged",
         note: "Prescription slip OCR detected ambiguous handwriting on dose numeral.",
+      },
+    ],
+  },
+  {
+    id: "task-b-01",
+    clinicId: "care-vijayawada-02",
+    patientId: "patient-lakshmi-devi",
+    patientName: "Lakshmi Devi",
+    patientPhone: "+91 99887 76655",
+    title: "Review Elevated TSH Report & Dose Verification",
+    type: "lab_review",
+    priority: "high",
+    status: "action_required",
+    relatedItemId: "rep-patient-b-01",
+    relatedItemType: "report",
+    assignedTo: "Dr. K. Ramanathan, MD",
+    assignedStaffRole: "Attending Physician",
+    dateOrdered: "2026-10-18",
+    dueDate: "2026-10-28",
+    nextAction: "Verify Levothyroxine titration schedule.",
+    history: [
+      {
+        id: "th-b-01",
+        timestamp: "2026-10-18 10:15 AM",
+        actor: "Dr. K. Ramanathan, MD",
+        action: "Task Created",
+        note: "Subclinical hypothyroidism flagged on lab panel.",
       },
     ],
   },

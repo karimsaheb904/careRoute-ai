@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useSyncExternalStore, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   UserRole,
   Language,
+  Profile,
   Prescription,
   MedicationSchedule,
   MedicationLog,
@@ -14,10 +16,17 @@ import {
   ClinicCareTask,
   NotificationItem,
   LifestyleRoutine,
+  PatientConsent,
 } from "@/types";
 import {
   demoPatient,
+  demoPatientB,
   demoClinicStaff,
+  demoClinicAdmin,
+  demoClinicBStaff,
+  demoClinician,
+  demoClinics,
+  initialConsents,
   initialPrescriptions,
   initialMedicationSchedules,
   initialMedicationLogs,
@@ -29,9 +38,20 @@ import {
   initialLifestyleRoutine,
 } from "./demoData";
 
+export const allProfiles: Profile[] = [
+  demoPatient,
+  demoPatientB,
+  demoClinicStaff,
+  demoClinicAdmin,
+  demoClinicBStaff,
+  demoClinician,
+];
+
 const STORAGE_KEYS = {
+  USER_ID: "careroute_user_id",
   ROLE: "careroute_role",
   LANG: "careroute_lang",
+  CONSENTS: "careroute_consents",
   PRESCRIPTIONS: "careroute_prescriptions",
   SCHEDULES: "careroute_schedules",
   LOGS: "careroute_logs",
@@ -43,9 +63,34 @@ const STORAGE_KEYS = {
   LIFESTYLE: "careroute_lifestyle",
 };
 
+function getInitialStorage<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return fallback;
+    if (key === STORAGE_KEYS.ROLE || key === STORAGE_KEYS.LANG || key === STORAGE_KEYS.USER_ID) {
+      return item as unknown as T;
+    }
+    return JSON.parse(item);
+  } catch {
+    return fallback;
+  }
+}
+
+const emptySubscribe = () => () => {};
+
 export function useCareRouteStore() {
+  const router = useRouter();
+  const isHydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
+  const [currentUserId, setCurrentUserIdState] = useState<string>("patient-venkata-rao");
   const [role, setRoleState] = useState<UserRole>("patient");
   const [lang, setLangState] = useState<Language>("en");
+  const [consents, setConsents] = useState<PatientConsent[]>(initialConsents);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(initialPrescriptions);
   const [schedules, setSchedules] = useState<MedicationSchedule[]>(initialMedicationSchedules);
   const [medLogs, setMedLogs] = useState<MedicationLog[]>(initialMedicationLogs);
@@ -55,49 +100,133 @@ export function useCareRouteStore() {
   const [careTasks, setCareTasks] = useState<ClinicCareTask[]>(initialCareTasks);
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
   const [lifestyle, setLifestyle] = useState<LifestyleRoutine>(initialLifestyleRoutine);
-  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load from localStorage on client mount
   useEffect(() => {
-    try {
-      const savedRole = localStorage.getItem(STORAGE_KEYS.ROLE);
-      if (savedRole) setRoleState(savedRole as UserRole);
+    queueMicrotask(() => {
+      const storedUserId = getInitialStorage(STORAGE_KEYS.USER_ID, "patient-venkata-rao");
+      if (storedUserId) setCurrentUserIdState(storedUserId);
 
-      const savedLang = localStorage.getItem(STORAGE_KEYS.LANG);
-      if (savedLang) setLangState(savedLang as Language);
+      const storedRole = getInitialStorage(STORAGE_KEYS.ROLE, "patient" as UserRole);
+      if (storedRole !== "patient") setRoleState(storedRole);
 
-      const savedRx = localStorage.getItem(STORAGE_KEYS.PRESCRIPTIONS);
-      if (savedRx) setPrescriptions(JSON.parse(savedRx));
+      const storedLang = getInitialStorage(STORAGE_KEYS.LANG, "en" as Language);
+      if (storedLang !== "en") setLangState(storedLang);
 
-      const savedSched = localStorage.getItem(STORAGE_KEYS.SCHEDULES);
-      if (savedSched) setSchedules(JSON.parse(savedSched));
+      const storedConsents = getInitialStorage(STORAGE_KEYS.CONSENTS, null as PatientConsent[] | null);
+      if (storedConsents) setConsents(storedConsents);
 
-      const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
-      if (savedLogs) setMedLogs(JSON.parse(savedLogs));
+      const storedRx = getInitialStorage(STORAGE_KEYS.PRESCRIPTIONS, null as Prescription[] | null);
+      if (storedRx) setPrescriptions(storedRx);
 
-      const savedReps = localStorage.getItem(STORAGE_KEYS.REPORTS);
-      if (savedReps) setReports(JSON.parse(savedReps));
+      const storedSched = getInitialStorage(STORAGE_KEYS.SCHEDULES, null as MedicationSchedule[] | null);
+      if (storedSched) setSchedules(storedSched);
 
-      const savedExpl = localStorage.getItem(STORAGE_KEYS.EXPLANATIONS);
-      if (savedExpl) setExplanations(JSON.parse(savedExpl));
+      const storedLogs = getInitialStorage(STORAGE_KEYS.LOGS, null as MedicationLog[] | null);
+      if (storedLogs) setMedLogs(storedLogs);
 
-      const savedApts = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
-      if (savedApts) setAppointments(JSON.parse(savedApts));
+      const storedReports = getInitialStorage(STORAGE_KEYS.REPORTS, null as MedicalReport[] | null);
+      if (storedReports) setReports(storedReports);
 
-      const savedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-      if (savedTasks) setCareTasks(JSON.parse(savedTasks));
+      const storedExpl = getInitialStorage(STORAGE_KEYS.EXPLANATIONS, null as Record<string, { en: ReportExplanation; te: ReportExplanation }> | null);
+      if (storedExpl) setExplanations(storedExpl);
 
-      const savedNotifs = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-      if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
+      const storedApts = getInitialStorage(STORAGE_KEYS.APPOINTMENTS, null as Appointment[] | null);
+      if (storedApts) setAppointments(storedApts);
 
-      const savedLife = localStorage.getItem(STORAGE_KEYS.LIFESTYLE);
-      if (savedLife) setLifestyle(JSON.parse(savedLife));
-    } catch {
-      // Fallback to initial values if storage error
-    } finally {
-      setIsHydrated(true);
-    }
+      const storedTasks = getInitialStorage(STORAGE_KEYS.TASKS, null as ClinicCareTask[] | null);
+      if (storedTasks) setCareTasks(storedTasks);
+
+      const storedNotifs = getInitialStorage(STORAGE_KEYS.NOTIFICATIONS, null as NotificationItem[] | null);
+      if (storedNotifs) setNotifications(storedNotifs);
+
+      const storedLife = getInitialStorage(STORAGE_KEYS.LIFESTYLE, null as LifestyleRoutine | null);
+      if (storedLife) setLifestyle(storedLife);
+    });
   }, []);
+
+  const currentUser: Profile =
+    allProfiles.find((p) => p.id === currentUserId) ||
+    (role === "patient" ? demoPatient : role === "admin" ? demoClinicAdmin : demoClinicStaff);
+
+  const canPerformAdminAction = currentUser.role === "admin" || role === "admin";
+
+  const switchAccount = (userId: string) => {
+    const target = allProfiles.find((p) => p.id === userId);
+    if (!target) return;
+    setCurrentUserIdState(target.id);
+    setRoleState(target.role);
+    try {
+      localStorage.setItem(STORAGE_KEYS.USER_ID, target.id);
+      localStorage.setItem(STORAGE_KEYS.ROLE, target.role);
+    } catch {}
+  };
+
+  const login = (email: string, roleToSelect: UserRole) => {
+    const matchedProfile = allProfiles.find(
+      (p) => p.email.toLowerCase() === email.toLowerCase()
+    ) || (roleToSelect === "patient" ? demoPatient : roleToSelect === "admin" ? demoClinicAdmin : demoClinicStaff);
+
+    setCurrentUserIdState(matchedProfile.id);
+    setRoleState(matchedProfile.role);
+    try {
+      localStorage.setItem(STORAGE_KEYS.USER_ID, matchedProfile.id);
+      localStorage.setItem(STORAGE_KEYS.ROLE, matchedProfile.role);
+    } catch {}
+  };
+
+  const logout = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.USER_ID);
+      localStorage.removeItem(STORAGE_KEYS.ROLE);
+    } catch {}
+    setCurrentUserIdState("");
+    setRoleState("patient");
+    router.push("/login");
+  };
+
+  const grantConsent = (clinicId: string) => {
+    const clinic = demoClinics.find((c) => c.id === clinicId);
+    const existing = consents.find(
+      (c) => c.patientId === currentUser.id && c.clinicId === clinicId
+    );
+    let updated: PatientConsent[];
+    if (existing) {
+      updated = consents.map((c) =>
+        c.id === existing.id
+          ? { ...c, status: "active" as const, revokedAt: undefined }
+          : c
+      );
+    } else {
+      const newConsent: PatientConsent = {
+        id: `consent-${Date.now()}`,
+        patientId: currentUser.id,
+        clinicId,
+        clinicName: clinic ? `${clinic.name}, ${clinic.branch}` : clinicId,
+        canViewReports: true,
+        canViewPrescriptions: true,
+        canManageAppointments: true,
+        status: "active",
+        grantedAt: new Date().toISOString(),
+      };
+      updated = [newConsent, ...consents];
+    }
+    setConsents(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CONSENTS, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const revokeConsent = (clinicId: string) => {
+    const updated = consents.map((c) =>
+      c.patientId === currentUser.id && c.clinicId === clinicId
+        ? { ...c, status: "revoked" as const, revokedAt: new Date().toISOString() }
+        : c
+    );
+    setConsents(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CONSENTS, JSON.stringify(updated));
+    } catch {}
+  };
 
   const setRole = (newRole: UserRole) => {
     setRoleState(newRole);
@@ -465,29 +594,103 @@ export function useCareRouteStore() {
     } catch {}
   };
 
+  // Multi-tenant and Patient Privacy Isolation:
+  const accessiblePrescriptions = prescriptions.filter((p) => {
+    if (role === "patient") {
+      return p.patientId === currentUser.id;
+    }
+    const patientProfile = allProfiles.find((pr) => pr.id === p.patientId);
+    const isClinicPatient = patientProfile?.clinicId === currentUser.clinicId;
+    const hasActiveConsent = consents.some(
+      (c) => c.patientId === p.patientId && c.clinicId === currentUser.clinicId && c.status === "active"
+    );
+    return isClinicPatient || hasActiveConsent;
+  });
+
+  const accessibleReports = reports.filter((r) => {
+    if (role === "patient") {
+      return r.patientId === currentUser.id;
+    }
+    const patientProfile = allProfiles.find((pr) => pr.id === r.patientId);
+    const isClinicPatient = patientProfile?.clinicId === currentUser.clinicId;
+    const hasActiveConsent = consents.some(
+      (c) => c.patientId === r.patientId && c.clinicId === currentUser.clinicId && c.status === "active"
+    );
+    return isClinicPatient || hasActiveConsent;
+  });
+
+  const accessibleAppointments = appointments.filter((a) => {
+    if (role === "patient") {
+      return a.patientId === currentUser.id;
+    }
+    const patientProfile = allProfiles.find((pr) => pr.id === a.patientId);
+    return patientProfile?.clinicId === currentUser.clinicId;
+  });
+
+  const accessibleCareTasks = careTasks.filter((t) => {
+    if (role === "patient") {
+      return false;
+    }
+    if (t.clinicId && t.clinicId !== currentUser.clinicId) {
+      return false;
+    }
+    const patientProfile = allProfiles.find((pr) => pr.id === t.patientId);
+    return !patientProfile || patientProfile.clinicId === currentUser.clinicId;
+  });
+
+  const accessibleSchedules = schedules.filter((s) => {
+    if (role === "patient") {
+      return s.patientId === currentUser.id;
+    }
+    return true;
+  });
+
+  const accessibleConsents = consents.filter((c) => {
+    if (role === "patient") {
+      return c.patientId === currentUser.id;
+    }
+    return c.clinicId === currentUser.clinicId;
+  });
+
   return {
     isHydrated,
-    currentUser: role === "patient" ? demoPatient : demoClinicStaff,
+    currentUser,
     role,
     setRole,
+    currentUserId,
+    switchAccount,
+    login,
+    logout,
+    canPerformAdminAction,
+    consents: accessibleConsents,
+    allConsents: consents,
+    grantConsent,
+    revokeConsent,
+    clinics: demoClinics,
+    allProfiles,
     lang,
     setLanguage,
     resetAllData,
-    prescriptions,
+    prescriptions: accessiblePrescriptions,
+    allPrescriptions: prescriptions,
     addPrescription,
     verifyPrescription,
-    schedules,
+    schedules: accessibleSchedules,
+    allSchedules: schedules,
     medLogs,
     logMedicationStatus,
-    reports,
+    reports: accessibleReports,
+    allReports: reports,
     addReport,
     explanations,
     saveReportExplanation,
-    appointments,
+    appointments: accessibleAppointments,
+    allAppointments: appointments,
     checkAppointmentConflict,
     scheduleAppointment,
     updateAppointmentStatus,
-    careTasks,
+    careTasks: accessibleCareTasks,
+    allCareTasks: careTasks,
     updateCareTaskStatus,
     lifestyle,
     toggleHabit,

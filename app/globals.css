@@ -2,77 +2,111 @@
 
 @layer base {
   :root {
-    --brand-navy-950: #070e18;
-    --brand-navy-900: #0c1a2d;
-    --brand-navy-800: #12243d;
-    --brand-teal-600: #0d9488;
-    --brand-teal-500: #14b8a6;
-    --brand-teal-400: #2dd4bf;
-    --brand-cyan-500: #06b6d4;
-    --brand-mint-500: #10b981;
-    --surface-light: #f8fafc;
-    --surface-card: #ffffff;
-    --border-subtle: #e2e8f0;
+    --bg-main: #080D1B;
+    --bg-sidebar: #10182B;
+    --bg-card: #121C30;
+    --bg-elevated: #18253A;
+    --color-teal: #16D6C1;
+    --color-cyan: #35BDF5;
+    --text-main: #F4F7FC;
+    --text-muted: #9AA9BE;
+    --border-subtle: #1E2B45;
   }
 
   body {
-    background-color: #f8fafc;
-    color: #0f172a;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: #080D1B;
+    color: #F4F7FC;
+    font-family: var(--font-inter), var(--font-noto-telugu), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 /* Custom Healthcare UI Utilities */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+.bg-healthcare-navy {
+  background-color: #080D1B;
 }
 
-.glass-panel-dark {
-  background: rgba(12, 26, 45, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(30, 41, 59, 0.7);
+.bg-healthcare-sidebar {
+  background-color: #10182B;
 }
 
-.card-hover {
+.bg-healthcare-card {
+  background-color: #121C30;
+}
+
+.bg-healthcare-elevated {
+  background-color: #18253A;
+}
+
+.border-healthcare {
+  border-color: #1E2B45;
+}
+
+.text-healthcare-teal {
+  color: #16D6C1;
+}
+
+.text-healthcare-cyan {
+  color: #35BDF5;
+}
+
+.text-healthcare-muted {
+  color: #9AA9BE;
+}
+
+.text-healthcare-main {
+  color: #F4F7FC;
+}
+
+/* Glassmorphism and Card Hover Effects */
+.card-healthcare {
+  background-color: #121C30;
+  border: 1px solid #1E2B45;
+  border-radius: 1.25rem;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-hover:hover {
+.card-healthcare:hover {
+  border-color: rgba(22, 214, 193, 0.35);
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px -6px rgba(12, 26, 45, 0.08), 0 8px 10px -6px rgba(12, 26, 45, 0.04);
+  box-shadow: 0 16px 32px -8px rgba(8, 13, 27, 0.6), 0 0 20px -4px rgba(22, 214, 193, 0.08);
 }
 
-/* Custom scrollbars for patient timeline */
+.elevated-healthcare {
+  background-color: #18253A;
+  border: 1px solid #233452;
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #080D1B;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #1E2B45;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #2D3F63;
 }
 
-/* Pulse animation for active medication doses */
+/* Smooth Soft Pulse for Active Reminders */
 @keyframes softPulse {
   0%, 100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.7;
+    transform: scale(1.02);
   }
 }
 

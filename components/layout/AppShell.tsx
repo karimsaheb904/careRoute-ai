@@ -10,7 +10,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isDemoTourOpen, setIsDemoTourOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-teal-500 selection:text-slate-950">
+    <div className="min-h-screen bg-[#080D1B] text-[#F4F7FC] flex flex-col font-sans selection:bg-[#16D6C1] selection:text-[#080D1B]">
       <Navbar onOpenDemoTour={() => setIsDemoTourOpen(true)} />
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto">

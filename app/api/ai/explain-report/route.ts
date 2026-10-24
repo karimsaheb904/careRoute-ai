@@ -13,12 +13,13 @@ export async function POST(req: NextRequest) {
       data: result,
       mode: result.isLiveAi ? "live_gemini" : "demo_sample",
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Failed to generate report explanation";
     console.error("API /api/ai/explain-report error:", err);
     return NextResponse.json(
       {
         success: false,
-        error: err.message || "Failed to generate report explanation",
+        error: errorMsg,
       },
       { status: 400 }
     );

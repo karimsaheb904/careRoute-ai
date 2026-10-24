@@ -246,10 +246,13 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- ==============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
+-- ROW LEVEL SECURITY (RLS) POLICIES (Hardened Multi-Tenant & RBAC)
 -- ==============================================================================
 
+ALTER TABLE clinics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinic_memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE caregiver_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prescriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prescription_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE medication_schedules ENABLE ROW LEVEL SECURITY;
@@ -262,42 +265,207 @@ ALTER TABLE care_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Patients can view and manage their own records
+-- 0. CLINICS POLICIES
+CREATE POLICY "Public read clinics" ON clinics
+  FOR SELECT USING (TRUE);
+
+-- 1. PROFILES POLICIES
 CREATE POLICY "Patients view own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Patients manage own prescriptions" ON prescriptions
-  FOR ALL USING (auth.uid() = patient_id);
+CREATE POLICY "Patients update own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Patients view own medication schedules" ON medication_schedules
-  FOR SELECT USING (auth.uid() = patient_id);
-
-CREATE POLICY "Patients manage medication logs" ON medication_logs
-  FOR ALL USING (auth.uid() = patient_id);
-
-CREATE POLICY "Patients manage own reports" ON medical_reports
-  FOR ALL USING (auth.uid() = patient_id);
-
-CREATE POLICY "Patients manage appointments" ON appointments
-  FOR ALL USING (auth.uid() = patient_id);
-
-CREATE POLICY "Patients view own notifications" ON notifications
-  FOR ALL USING (auth.uid() = user_id);
-
--- Clinic staff and Clinicians have access to clinic patient records
 CREATE POLICY "Staff view clinic patients" ON profiles
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM clinic_memberships cm
-      WHERE cm.user_id = auth.uid() AND cm.clinic_id = profiles.clinic_id
+      WHERE cm.user_id = auth.uid() 
+        AND cm.clinic_id = profiles.clinic_id 
+        AND cm.is_active = TRUE
     )
   );
 
-CREATE POLICY "Staff manage clinic care tasks" ON care_tasks
+-- 2. CLINIC MEMBERSHIPS & ADMIN-ONLY ROLE ACTIONS
+CREATE POLICY "Staff view clinic memberships" ON clinic_memberships
+  FOR SELECT USING (
+    clinic_id IN (SELECT clinic_id FROM clinic_memberships WHERE user_id = auth.uid() AND is_active = TRUE)
+  );
+
+-- ONLY clinic administrators can manage staff memberships
+CREATE POLICY "Admins manage clinic staff" ON clinic_memberships
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM clinic_memberships cm
-      WHERE cm.user_id = auth.uid()
+      WHERE cm.user_id = auth.uid() 
+        AND cm.clinic_id = clinic_memberships.clinic_id 
+        AND cm.staff_role = 'admin'
+        AND cm.is_active = TRUE
+    )
+  );
+
+-- 3. PRESCRIPTIONS & PRESCRIPTION ITEMS POLICIES
+CREATE POLICY "Patients view own prescriptions" ON prescriptions
+  FOR SELECT USING (auth.uid() = patient_id);
+
+CREATE POLICY "Patients upload own prescriptions" ON prescriptions
+  FOR INSERT WITH CHECK (auth.uid() = patient_id);
+
+CREATE POLICY "Staff view clinic prescriptions" ON prescriptions
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+      WHERE p.id = prescriptions.patient_id
+        AND cm.user_id = auth.uid()
+        AND cm.is_active = TRUE
+    )
+  );
+
+CREATE POLICY "Staff verify clinic prescriptions" ON prescriptions
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+      WHERE p.id = prescriptions.patient_id
+        AND cm.user_id = auth.uid()
+        AND cm.is_active = TRUE
+    )
+  );
+
+CREATE POLICY "Access prescription items" ON prescription_items
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM prescriptions rx
+      WHERE rx.id = prescription_items.prescription_id
+        AND (
+          rx.patient_id = auth.uid()
+          OR EXISTS (
+            SELECT 1 FROM profiles p
+            JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+            WHERE p.id = rx.patient_id AND cm.user_id = auth.uid() AND cm.is_active = TRUE
+          )
+        )
+    )
+  );
+
+-- 4. MEDICATION SCHEDULES & LOGS POLICIES
+CREATE POLICY "Patients view own medication schedules" ON medication_schedules
+  FOR SELECT USING (auth.uid() = patient_id);
+
+CREATE POLICY "Staff view clinic medication schedules" ON medication_schedules
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+      WHERE p.id = medication_schedules.patient_id
+        AND cm.user_id = auth.uid()
+        AND cm.is_active = TRUE
+    )
+  );
+
+CREATE POLICY "Patients manage medication logs" ON medication_logs
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM medication_schedules ms
+      WHERE ms.id = medication_logs.medication_id AND ms.patient_id = auth.uid()
+    )
+  );
+
+-- 5. MEDICAL REPORTS & MEASUREMENTS POLICIES (Patient Isolation)
+CREATE POLICY "Patients view own reports" ON medical_reports
+  FOR SELECT USING (auth.uid() = patient_id);
+
+CREATE POLICY "Staff view clinic patient reports" ON medical_reports
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+      WHERE p.id = medical_reports.patient_id
+        AND cm.user_id = auth.uid()
+        AND cm.is_active = TRUE
+    )
+  );
+
+CREATE POLICY "Access report measurements" ON report_measurements
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM medical_reports mr
+      WHERE mr.id = report_measurements.report_id
+        AND (
+          mr.patient_id = auth.uid()
+          OR EXISTS (
+            SELECT 1 FROM profiles p
+            JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+            WHERE p.id = mr.patient_id AND cm.user_id = auth.uid() AND cm.is_active = TRUE
+          )
+        )
+    )
+  );
+
+CREATE POLICY "Access report explanations" ON report_explanations
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM medical_reports mr
+      WHERE mr.id = report_explanations.report_id
+        AND (
+          mr.patient_id = auth.uid()
+          OR EXISTS (
+            SELECT 1 FROM profiles p
+            JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+            WHERE p.id = mr.patient_id AND cm.user_id = auth.uid() AND cm.is_active = TRUE
+          )
+        )
+    )
+  );
+
+-- 6. APPOINTMENTS POLICIES (Multi-tenant)
+CREATE POLICY "Patients manage appointments" ON appointments
+  FOR ALL USING (auth.uid() = patient_id);
+
+CREATE POLICY "Staff manage clinic appointments" ON appointments
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+      WHERE p.id = appointments.patient_id
+        AND cm.user_id = auth.uid()
+        AND cm.is_active = TRUE
+    )
+  );
+
+-- 7. CLINIC CARE TASKS (Strict Clinic Isolation: Clinic A != Clinic B)
+CREATE POLICY "Staff manage own clinic care tasks" ON care_tasks
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN clinic_memberships cm ON cm.clinic_id = p.clinic_id
+      WHERE p.id = care_tasks.patient_id
+        AND cm.user_id = auth.uid()
+        AND cm.is_active = TRUE
+    )
+  );
+
+-- 8. PATIENT CONSENT & ACCESS REVOCATION POLICIES
+CREATE POLICY "Patients manage consent" ON caregiver_permissions
+  FOR ALL USING (auth.uid() = patient_id);
+
+CREATE POLICY "Caregivers view granted consent" ON caregiver_permissions
+  FOR SELECT USING (auth.uid() = caregiver_id AND status = 'approved');
+
+-- 9. NOTIFICATIONS & AUDIT LOG POLICIES (Admin Auditing)
+CREATE POLICY "Users view own notifications" ON notifications
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins view audit logs" ON audit_logs
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+    OR EXISTS (
+      SELECT 1 FROM clinic_memberships cm
+      WHERE cm.user_id = auth.uid() AND cm.staff_role = 'admin' AND cm.is_active = TRUE
     )
   );
 
@@ -310,3 +478,5 @@ CREATE INDEX IF NOT EXISTS idx_measurements_report ON report_measurements(report
 CREATE INDEX IF NOT EXISTS idx_appointments_date_room ON appointments(date, room);
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON care_tasks(assigned_to, status);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read);
+CREATE INDEX IF NOT EXISTS idx_clinic_memberships_user ON clinic_memberships(user_id, clinic_id);
+CREATE INDEX IF NOT EXISTS idx_caregiver_permissions ON caregiver_permissions(patient_id, caregiver_id, status);

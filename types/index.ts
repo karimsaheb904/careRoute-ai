@@ -163,6 +163,7 @@ export interface AppointmentConflict {
 
 export interface ClinicCareTask {
   id: string;
+  clinicId?: string;
   patientId: string;
   patientName: string;
   patientPhone: string;
@@ -219,4 +220,25 @@ export interface LifestyleRoutine {
     guidanceTe: string;
     completed: boolean;
   }>;
+}
+
+export interface Clinic {
+  id: string;
+  name: string;
+  branch: string;
+  city: string;
+  phone: string;
+}
+
+export interface PatientConsent {
+  id: string;
+  patientId: string;
+  clinicId: string;
+  clinicName: string;
+  canViewReports: boolean;
+  canViewPrescriptions: boolean;
+  canManageAppointments: boolean;
+  status: "active" | "revoked" | "pending";
+  grantedAt: string;
+  revokedAt?: string;
 }

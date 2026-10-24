@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node scripts/qa-security-test.mjs",
+    "test:security": "node scripts/qa-security-test.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Noto_Sans_Telugu } from "next/font/google";
 import "./globals.css";
 import { CareRouteProvider } from "@/components/CareRouteProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const notoSansTelugu = Noto_Sans_Telugu({
+  variable: "--font-noto-telugu",
+  subsets: ["telugu"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "CareRoute AI — Your Healthcare Journey, Connected",
   description:
-    "An AI-powered, bilingual healthcare assistant connecting patients and authorized clinic staff through intelligent prescription verification, lab report explanations, and appointment conflict detection.",
+    "A sophisticated, AI-powered, bilingual (English & Telugu) healthcare assistant connecting patients and authorized clinic staff through intelligent prescription verification, lab report explanations, and appointment conflict detection.",
   keywords: [
     "CareRoute AI",
     "healthcare AI",
@@ -35,9 +38,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${notoSansTelugu.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
+      <body className="min-h-full flex flex-col bg-[#080D1B] text-[#F4F7FC] font-sans selection:bg-[#16D6C1] selection:text-[#080D1B]">
         <CareRouteProvider>{children}</CareRouteProvider>
       </body>
     </html>
